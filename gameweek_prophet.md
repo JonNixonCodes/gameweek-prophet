@@ -35,7 +35,7 @@ Casual FPL players using the app weekly to inform transfer decisions based on pr
     * Phase 1: PySpark on Dataproc.
     * Phase 2: TBC
 * ML Model:
-    * Phase 1: AutoML on Vertex AI Workbench.
+    * Phase 1: Vertex AI Workbench Instance. Note that we tried using AutoML however the costs were very high for training a basic linear regression model.
     * Phase 2: TBC
 * Presentation Layer:
     * Phase 1: Looker dashboard.
