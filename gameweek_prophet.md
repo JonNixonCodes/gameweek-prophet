@@ -4,7 +4,7 @@
 
 ###   1.1 Overview
 
-Gameweek Prophet is a machine learning project that predicts Fantasy Premier League (FPL) player points for each gameweek, evolving into a user-facing product.
+Gameweek Prophet is a personal project to build an AI that predicts Fantasy Premier League (FPL) player points for each gameweek, evolving into a user-facing product.
 
 ###   1.2 Purpose & Goals
 
@@ -28,26 +28,44 @@ Casual FPL players using the app weekly to inform transfer decisions based on pr
 
 ###   3.1 System Architecture
 
-* Data Sources:
-    * Phase 1: FPL API, historical CSVs.
-    * Phase 2: TBC
-* ETL Pipeline:
-    * Phase 1: PySpark on Dataproc.
-    * Phase 2: TBC
-* ML Model:
-    * Phase 1: Vertex AI Workbench Instance. Note that we tried using AutoML however the costs were very high for training a basic linear regression model.
-    * Phase 2: TBC
-* Presentation Layer:
-    * Phase 1: Looker dashboard.
-    * Phase 2: Next.js web application.
-* Deployment:
-    * Phase 1: Vertex AI, Looker.
-    * Phase 2: Vertex AI, Vercel (for Next.js).
+#### 3.1.1 Data Sources
+* FPL API
+* Historical FPL Seasons
+
+#### 3.1.1 Ingestion
+* Cloud Functions
+
+#### 3.1.1 ETL
+* [Dataproc Serverless for Spark Batch](https://cloud.google.com/dataproc-serverless/docs/overview#spark-batch)
+
+#### 3.1.1 ML
+* Train model locally using scikit-learn and exported to [Vertex AI Workbench](https://cloud.google.com/vertex-ai/docs/training/exporting-model-artifacts#scikit-learn).
+* Deployed using Vertex AI Workbench [batch predictions](https://cloud.google.com/vertex-ai/docs/predictions/get-batch-predictions).
+    
+        We tried using AutoML for training however the costs were high for training a basic linear regression model.
+
+#### 3.1.1 Back-end
+* BigQuery as data connection for Looker Studio.
+
+#### 3.1.1 Front-end
+* Phase 1: Looker Studio dashboard.
+* Phase 2: Next.js web application.
+
+#### 3.1.1 Orchestration
+* Cloud Workflows
+
+#### 3.1.1 Deployment
+* Phase 1: Vertex AI, Looker Studio.
+* Phase 2: Vertex AI, Vercel (for Next.js).
 
 ###   3.2 Data Flow
-
-* Phase 1: Data ingestion -> ETL -> Model training -> Deployment -> Inference -> Looker.
-* Phase 2: Data ingestion -> ETL -> Model training -> Deployment -> Inference -> Web application.
+Source
+--> Ingestion
+--> ETL
+|--> Prediction
+|   `--> Back-end
+|       `--> Front-end
+|--> Model Training
 
 ###   3.3 Future Considerations
 
@@ -67,29 +85,24 @@ Casual FPL players using the app weekly to inform transfer decisions based on pr
         * event/{gameweek-id}/live/
         * entry/{manager_id}/
         * entry/{manager_id}/history
-* Historical CSVs:
+* Historical FPL Seasons:
     * Source: vaastav/Fantasy-Premier-League GitHub repository.
     * Description: CSV files of all players in the English Premier League with their respective team and total fantasy points.
 
 ###   4.2 Data Storage
 
-* Phase 1: 
-    * Raw and processed data stored in Google Cloud Storage.
-    * Raw data stored in native format.
-    * Processed data and predicted player points stored in Parquet format.
-* Phase 2: TBC
+* Raw and processed data stored in Google Cloud Storage.
+* Raw data stored in native format.
+* Processed data and predicted player points stored in Parquet format.
 
 ###   4.3 Data Transformation
 
-* Phase 1:
-    * Ad-hoc batch processing of raw data using PySpark.
-    * Feature engineering (e.g., calculating xG, goals scored in the previous 4/16 game weeks).
-* Phase 2: TBC
+* Ad-hoc batch processing of raw data using PySpark.
+* Feature engineering (e.g., calculating xG, goals scored in the previous 4/16 game weeks).
 
 ##   5. Model Development
 
-* Phase 1: AutoML on Vertex AI Workbench.
-* Phase 2: TBC
+* Locally developed model hosted on Vertex AI Workbench.
 
 ##   6. Implementation Details
 
@@ -97,10 +110,11 @@ Casual FPL players using the app weekly to inform transfer decisions based on pr
 
 * Phase 1:
     * PySpark
-    * Jupyter Notebooks
-    * Vertex AI (for training and deploying the model)
-    * Google Cloud Storage (for storing the data)
-    * Looker (for visualizing the data)
+    * Jupyter Notebooks - for local development
+    * Vertex AI - for deploying the model
+    * Google Cloud Storage - for storing the data
+    * BigQuery - for analysis and data visualisation
+    * Looker - for front-end visualisation
 * Phase 2:
     * Python
     * PySpark
