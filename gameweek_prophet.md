@@ -32,40 +32,139 @@ Casual FPL players using the app weekly to inform transfer decisions based on pr
 * FPL API
 * Historical FPL Seasons
 
+#### 3.1.1 Storage
+    gs://your-bucket-name/
+    ├── models/
+    │   └── fpl_prediction_model/
+    │       ├── version=1/
+    │       │   ├── model.joblib
+    │       │   ├── metadata.json  # (e.g., training date, parameters)
+    │       └── version=2/
+    │           ├── model.joblib
+    │           ├── metadata.json
+    │       └── ...
+    ├── raw/
+    │   └── fpl_api/
+    │       ├── bootstrap_static/
+    │       │   └── source_date=YYYY-MM-DD/
+    │       │       └── data.json
+    │       └── fixtures/
+    │       │   └── source_date=YYYY-MM-DD/
+    │       │       └── data.json
+    │       └── ...
+    │   └── historical_csvs/
+    │       ├── fixtures/
+    │       │   └── source_date=YYYY-MM-DD/
+    │       │       └── data.csv
+    │       └── merged_gw/
+    │       │   └── source_date=YYYY-MM-DD/
+    │       │       └── data.csv
+    │       └── ...
+    └── processed/
+        └── fpl_data/
+            ├── source_date=YYYY-MM-DD/
+            │   └── data.parquet
+            ├── source_date=YYYY-MM-DD/
+            │   └── data.parquet
+            └── ...
+
+**metadata.json**
+```json
+{
+    "training_date": "2024-07-10 10:00:00",
+    "dataset_version": "v2.0",
+    "model_parameters": {
+        "n_estimators": 100,
+        "learning_rate": 0.01
+    },
+    "evaluation_metrics": {
+        "rmse": 1.25,
+        "r2_score": 0.85
+    }
+}
+```
+
 #### 3.1.1 Ingestion
-* Cloud Functions
+| Function Name                     | Description                                  | Data Source        | Data Type          |
+| :-------------------------------- | :------------------------------------------- | :----------------- | :----------------- |
+| `ingest_fpl_api_bootstrap_static`   | Ingests data from FPL API bootstrap-static/  | FPL API            | Bootstrap Static   |
+| `ingest_fpl_api_fixtures`           | Ingests data from FPL API fixtures/          | FPL API            | Fixtures           |
+| `ingest_fpl_api_element_summary`    | Ingests data from FPL API element-summary/   | FPL API            | Element Summary    |
+| `ingest_fpl_api_event_live`         | Ingests data from FPL API event/{}/live/     | FPL API            | Event Live         |
+| `ingest_fpl_api_entry`              | Ingests data from FPL API entry/             | FPL API            | Entry              |
+| `ingest_fpl_api_entry_history`      | Ingests data from FPL API entry/{}/history  | FPL API            | Entry History      |
+| `ingest_historical_csv_player_data` | Ingests historical player data               | Historical CSVs    | Player Data        |
 
 #### 3.1.1 ETL
-* [Dataproc Serverless for Spark Batch](https://cloud.google.com/dataproc-serverless/docs/overview#spark-batch)
+For the ETL I wanted to learn Spark and for that reason I am thinking to use [Dataproc Serverless for Spark Batch](https://cloud.google.com/dataproc-serverless/docs/overview#spark-batch).
 
-#### 3.1.1 ML
+#### 3.1.1 MLOps
+My main requirements for training and operationalising the Machine Learning part of this project my requirements are to keep costs low, and to be able to monitor and re-train my model. My current approach is to:
 * Train model locally using scikit-learn and exported to [Vertex AI Workbench](https://cloud.google.com/vertex-ai/docs/training/exporting-model-artifacts#scikit-learn).
-* Deployed using Vertex AI Workbench [batch predictions](https://cloud.google.com/vertex-ai/docs/predictions/get-batch-predictions).
-    
+
         We tried using AutoML for training however the costs were high for training a basic linear regression model.
 
+* Deployed using Vertex AI Workbench [batch predictions](https://cloud.google.com/vertex-ai/docs/predictions/get-batch-predictions).
+* Monitor model performance using [Vertex AI Model Monitoring](https://cloud.google.com/vertex-ai/docs/model-monitoring/overview).
+    
+
 #### 3.1.1 Back-end
-* BigQuery as data connection for Looker Studio.
+For the backend, the current plan is to read the data using external tables in BigQuery, and run a simple pipeline to load data into a BigQuery table so that the data can be accessed from Looker Studio (front-end).
 
 #### 3.1.1 Front-end
-* Phase 1: Looker Studio dashboard.
-* Phase 2: Next.js web application.
+Currently the front-end is a Looker Studio dashboard. Future iteration of the Looker Studio dashboard will be mobile friendly and built with responsive design. In the future we will develop a React, Next.js web application.
 
 #### 3.1.1 Orchestration
-* Cloud Workflows
+Our main requirement is to keep the costs low. For that reason I prefer to opt for a serverless solution. Below are some of the options that I am considering.
+* **Option A**: Using Cloud Workflows for building an end-to-end pipeline from ingestion to updating the back-end. Scheduling will be done through a daily CRON job using Cloud Scheduler.
+
+    **Pros**:
+    * Pay per use model
+    * Easy to integrate with other GCP services
+    * Monitor workflows through UI
+    * Execution control using conditions, iteration, parallel steps
+    * Multiple options to trigger workflow: Manual, API, Scheduled
+    * Handle error scenarios using retry logic
+
+    **Cons**:
+    * Less flexibility with scheduling, if event-driven or dynamic scheduling is required.
+    * Less community support compared with the more popular Composer option.
+    * Not as easy to manage multiple workflows and dependencies between workflows compared with Composer.
+
+* **Option B**: Build each module separately, and use a combination of Cloud Scheduler for CRON jobs and Pub/Sub and Cloud Functions for event-driven triggers to orchestrate tasks.
+
+    **Pros**:
+    * Keep costs low, only paying for what I need.
+    * Most flexibile option, since each task is modularised and I can completely control the flow.
+
+    **Cons**:
+    * Most complex as it requires developing multipe event-triggered Cloud Functions and pub/sub topics.
+
+* **Option C**: Using Cloud Composer to build a DAG using Airflow.
+
+    **Pros**:
+    * More powerful and flexible compared with using Cloud Workflows.
+    * Monitoring and UI is superior to Cloud Workflows.
+    * Rich ecosystem: Airflow has a large developer community and also a plethora of Airflow connectors.
+
+    **Cons**:
+    * Most expensive. Significant costs to keep Composer running.
+
+Based on the above considerations we have decided to use **Option A** to use Cloud Workflows for orchestration as it is a low cost option which also has all the feature that we require currently and to meet our future needs. I don't forsee the need to go for the more complex (and expensive) solution using Cloud Composer at any point in the future.
 
 #### 3.1.1 Deployment
-* Phase 1: Vertex AI, Looker Studio.
-* Phase 2: Vertex AI, Vercel (for Next.js).
+Current deployment will be done using the GCP services relevant for each section (Storage, ETL, MLOps, Back-end, Front-end, Orchestration).
+
+Future iterations will use Vercel for deploying the front-end web application, back-end deployment TBD.
 
 ###   3.2 Data Flow
-Source
---> Ingestion
---> ETL
-|--> Prediction
-|   `--> Back-end
-|       `--> Front-end
-|--> Model Training
+    Source
+    --> Ingestion
+    --> ETL
+    |--> Prediction
+    |   `--> Back-end
+    |       `--> Front-end
+    |--> Model Training
 
 ###   3.3 Future Considerations
 
@@ -129,22 +228,22 @@ Source
 
 ###   6.2 Project Structure
 
-fpl-points-prediction/
- │── data/                            # Local datasets (avoid committing large files)
- │── notebooks/                       # Jupyter notebooks for exploration 
- │── src/                             # Source code 
- │ ├── ingestion/                     # Data fetching scripts 
- │ ├── processing/                    # PySpark ETL scripts 
- │ ├── training/                      # AutoML training scripts 
- │ ├── deployment/                    # Model deployment scripts 
- │ ├── inference/                     # Prediction scripts 
- │── config/                          # Configuration files 
- │── tests/                           # Unit and integration tests 
- │── cloud/                           # Terraform/GCP deployment scripts (if applicable) 
- │── scripts/                         # Utility scripts 
- │── requirements.txt                 # Python dependencies 
- │── Dockerfile                       # Docker setup (if needed) 
- │── README.md                        # Project documentation
+    fpl-points-prediction/
+    │── data/                            # Local datasets (avoid committing large files)
+    │── notebooks/                       # Jupyter notebooks for exploration 
+    │── src/                             # Source code 
+    │ ├── ingestion/                     # Data fetching scripts 
+    │ ├── processing/                    # PySpark ETL scripts 
+    │ ├── training/                      # AutoML training scripts 
+    │ ├── deployment/                    # Model deployment scripts 
+    │ ├── inference/                     # Prediction scripts 
+    │── config/                          # Configuration files 
+    │── tests/                           # Unit and integration tests 
+    │── cloud/                           # Terraform/GCP deployment scripts (if applicable) 
+    │── scripts/                         # Utility scripts 
+    │── requirements.txt                 # Python dependencies 
+    │── Dockerfile                       # Docker setup (if needed) 
+    │── README.md                        # Project documentation
 
 ###   6.3 Code Repositories
 
