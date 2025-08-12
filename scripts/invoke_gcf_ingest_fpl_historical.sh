@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Replace with your actual Cloud Run service URL for ingest_fpl_historical
-SERVICE_URL="https://ingest-fpl-historical-hvhy4lzhlq-ts.a.run.app"
+SERVICE_URL="https://australia-southeast1-leverageai-sandbox.cloudfunctions.net/ingest_fpl_historical"
 
 # Optional: Set start and end years for ingestion
 # Default values will be used if not provided

@@ -20,7 +20,7 @@ def fetch_fpl_historical_data(base_url, season_year):
         season_year (str): The season year in format YYYY-YY (e.g., "2022-23").
 
     Returns:
-        str: The raw CSV data as a string.
+        tuple: A tuple containing the raw CSV data as a string and the source URL.
     """
     url = base_url.format(season_year=season_year)
     try:
@@ -29,12 +29,12 @@ def fetch_fpl_historical_data(base_url, season_year):
         response.raise_for_status()  # Raise an exception for bad status codes
         
         logging.info(f"Successfully fetched data for {season_year}")
-        return response.text
+        return response.text, url
     except requests.exceptions.RequestException as e:
         logging.error(f"Error fetching data for {season_year}: {e}")
         raise
 
-def save_csv_to_gcs(bucket_name, csv_data, file_path, source_date):
+def save_csv_to_gcs(bucket_name, csv_data, file_path, source_date, season_year, source_url):
     """Saves raw CSV data to Google Cloud Storage with Hive partitioning.
 
     Args:
@@ -42,6 +42,8 @@ def save_csv_to_gcs(bucket_name, csv_data, file_path, source_date):
         csv_data (str): The raw CSV data to save.
         file_path (str): The base path within the bucket to save the file (e.g., "raw/fpl_historical/merged_gw/").
         source_date (str): The source date for Hive partitioning (YYYY-MM-DD).
+        season_year (str): The season year of the data (e.g., "2022-23").
+        source_url (str): The URL the data was fetched from.
     """
     try:
         # Initialize GCS client
@@ -55,6 +57,13 @@ def save_csv_to_gcs(bucket_name, csv_data, file_path, source_date):
         # Add the Hive partition directory to the file path
         full_file_path = f"{file_path}source_date={source_date}/data.csv"
         blob = bucket.blob(full_file_path)
+
+        # Set metadata
+        blob.metadata = {
+            'season_year': season_year,
+            'source_url': source_url,
+            'source_date': source_date
+        }
 
         # Upload the raw CSV data
         blob.upload_from_string(csv_data, content_type='text/csv')
@@ -110,10 +119,10 @@ def ingest_fpl_historical(request):
             season_year = f"{year}-{str(year + 1)[-2:]}"
             for dataset_name, base_url in datasets.items():
                 try:
-                    csv_text = fetch_fpl_historical_data(base_url, season_year)
+                    csv_text, source_url = fetch_fpl_historical_data(base_url, season_year)
                     if csv_text and not csv_text.isspace():
-                        gcs_path = f"raw/fpl_historical/{dataset_name}/{season_year}/"
-                        save_csv_to_gcs(bucket_name, csv_text, gcs_path, source_date)
+                        gcs_path = f"raw/fpl_historical/{dataset_name}/{season_year.replace('-', '_')}/"
+                        save_csv_to_gcs(bucket_name, csv_text, gcs_path, source_date, season_year, source_url)
                     else:
                         logging.warning(f"No data returned for {dataset_name} for season {season_year}. Skipping.")
                 except Exception as e:
