@@ -1,0 +1,21 @@
+# This file specifies files that are ignored by the gcloud CLI when
+# uploading to Google Cloud. You can extend this file by adding your
+# own ignore rules.
+
+# Folders
+.gcloudignore
+.git
+.github
+.gitignore
+.pytest_cache
+.venv
+.vscode
+env
+venv
+
+# Files
+.env
+.env.production
+.python-version
+cloudbuild.yaml
+dev.yaml
