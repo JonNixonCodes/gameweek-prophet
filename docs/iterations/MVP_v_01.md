@@ -1,4 +1,4 @@
-#   Gameweek Prophet - Software Design Document
+#   Gameweek Prophet - MVP - Version 1
 
 ##   1. Introduction
 
@@ -8,7 +8,7 @@ This document outlines the software design for the Minimum Viable Product (MVP) 
 
 ###   1.2 Scope
 
-The initial release will be a web-based application. Key features will include an interactive dashboard, player recommendations, and important player updates.
+The initial release will be a web-based application. Key features will include an interactive dashboard, player recommendations, points predictions.
 
 ###   1.3 Goals and Objectives
 
@@ -21,20 +21,19 @@ The initial release will be a web-based application. Key features will include a
 ###   2.1 Interactive Dashboard
 
 * The dashboard will present key player information and recommendations in a clear and concise format.
-* A scoring system will allow users to quickly compare player potential. The scoring system will be based on:
 * Past performance (e.g., points, goals, assists)
 * Predicted future performance (expected points, derived from the ML model)
 * Availability (injury status, likelihood of starting, and average minutes played)
-* The dashboard will be developed using Looker.
+* The dashboard will be developed in Looker Studio.
 
 ###   2.2 Player Recommendations
 
 * The application will provide weekly player recommendations for transfers and captaincy.
 * Recommendations will be based on data from the FPL API, including past performance, upcoming fixtures, player price and value, expected points, and injury news.
 
-###   2.3 Important Player Updates
+###   2.3 Points Predictions
 
-* The application will highlight crucial player information that could impact team selection, such as potential price drops, injury status updates, announcements of double gameweeks, and suspensions.
+* The application will highlight expected points based on the output from a ML model.
 
 ##   3. Technical Design
 
@@ -69,6 +68,8 @@ Cloud Run Functions will be used to ingest data from the FPL API and other sourc
 
 * Raw and processed data will be stored in Google Cloud Storage.
 * Data will be stored in its native format initially, with processed data stored in Parquet format.
+
+**GCS Structure**
 
         gs://gameweek-prophet-dev/
         ├── models/
@@ -105,7 +106,7 @@ Cloud Run Functions will be used to ingest data from the FPL API and other sourc
                 │   └── data.parquet
                 └── ...
 
-**metadata.json**
+**Model Metadata**
 ```json
 {
     "training_date": "2024-07-10 10:00:00",
