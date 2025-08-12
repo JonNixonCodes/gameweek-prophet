@@ -10,21 +10,54 @@
 ## 📂 Project Structure  
 
     gameweek-prophet/
-    │── data/                            # Local datasets (avoid committing large files)
-    │── notebooks/                       # Jupyter notebooks for exploration 
-    │── src/                             # Source code 
-    │ ├── ingestion/                     # Data fetching scripts 
-    │ ├── processing/                    # PySpark ETL scripts 
-    │ ├── training/                      # AutoML training scripts 
-    │ ├── deployment/                    # Model deployment scripts 
-    │ ├── inference/                     # Prediction scripts 
-    │── config/                          # Configuration files 
-    │── tests/                           # Unit and integration tests 
-    │── cloud/                           # Terraform/GCP deployment scripts (if applicable) 
-    │── scripts/                         # Utility scripts 
-    │── requirements.txt                 # Python dependencies 
-    │── Dockerfile                       # Docker setup (if needed) 
-    │── README.md                        # Project documentation
+    ├── .venv/                           # Python virtual environment
+    ├── data/                            # Local datasets
+    │   ├── model/                       # Trained models
+    │   ├── processed/                   # Processed data
+    │   └── raw/                         # Raw ingested data
+    ├── docs/                            # Project documentation and iterations
+    ├── notebooks/                       # Jupyter notebooks for exploration and development
+    ├── scripts/                         # Utility and deployment scripts
+    ├── src/                             # Source code
+    │   ├── bigquery/                    # BigQuery SQL definitions
+    │   └── cloud_functions/             # Google Cloud Functions
+    │       ├── ingest_fpl_api/          # FPL API ingestion function
+    │       └── ingest_fpl_historical/   # FPL historical data ingestion function
+    ├── tests/                           # Unit and integration tests
+    ├── LICENSE                          # Project license
+    ├── README.md                        # Project documentation
+    └── requirements.txt                 # Python dependencies
+
+## 🚀 How to Use
+
+### Executing Scripts
+
+The `scripts/` directory contains various utility and deployment scripts. To execute a script, navigate to the `scripts/` directory and run it using `bash` or `sh`:
+
+```bash
+cd scripts/
+bash your_script_name.sh
+```
+
+Remember to make the script executable if necessary: `chmod +x your_script_name.sh`.
+
+### Opening Notebooks
+
+The `notebooks/` directory contains Jupyter notebooks for data exploration, analysis, and model development. To open and run these notebooks:
+
+1.  **Ensure Jupyter is Installed:** If you don't have Jupyter installed, you can install it via pip:
+    ```bash
+pip install jupyter
+    ```
+    It's recommended to do this within your project's virtual environment.
+
+2.  **Start Jupyter Lab/Notebook:** Navigate to the project's root directory and start Jupyter Lab or Jupyter Notebook:
+    ```bash
+jupyter lab
+    # or
+jupyter notebook
+    ```
+    This will open a new tab in your web browser, displaying the Jupyter interface. You can then navigate to the `notebooks/` directory and open any `.ipynb` file.
 
 ## 🛠️ Setup  
 ### 1️⃣ Clone the Repository  
@@ -35,12 +68,6 @@ cd gameweek-prophet
 
 ### 2️⃣ Install Dependencies
 pip install -r requirements.txt
-
-### 3️⃣ Run Jupyter Notebooks (Optional)
-jupyter notebook
-
-### 4️⃣ Run the ETL Pipeline
-python src/processing/run_etl.py
 
 ##   Acknowledgments
 
